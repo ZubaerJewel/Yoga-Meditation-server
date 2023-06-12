@@ -1,1 +1,1 @@
-# summer-camp-server
+# yoga-meditation-server
