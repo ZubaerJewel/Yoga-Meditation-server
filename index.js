@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 require('dotenv').config();
+const stripe = require('stripe');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000;
@@ -28,7 +29,6 @@ const verifyJWT = (req, res, next) => {
 }
 
 
-
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 // const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ogm9xa8.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -45,14 +45,13 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
 
 
         const usersCollection = client.db("yoga-meditation").collection("users");
         const classesCollection = client.db("yoga-meditation").collection("classes");
         const instructorCollection = client.db("yoga-meditation").collection("instructors");
         const selectClsCollection = client.db("yoga-meditation").collection("selectcls");
-
 
 
         app.post('/jwt', (req, res) => {
@@ -173,12 +172,12 @@ async function run() {
         })
 
         // instructor file api......
-        app.get('/instructor', async (req, res) => {
+        app.get('/instructors', async (req, res) => {
             const result = await instructorCollection.find().toArray();
             res.send(result);
         })
 
-        app.post('/instructor', async (req, res) => {
+        app.post('/instructors', async (req, res) => {
             const item = req.body;
             const result = await instructorCollection.insertOne(item);
             res.send(result);
@@ -215,6 +214,21 @@ async function run() {
             res.send(result);
         })
 
+        // create payment intent
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+            const {price} = req.body;
+            const amount = price*100;
+            console.log(amount);
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
+        })
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
@@ -236,3 +250,5 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
     console.log(`Summer Camp is coming soon on port: ${port}`)
 })
+
+
