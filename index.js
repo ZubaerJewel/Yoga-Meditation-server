@@ -50,6 +50,7 @@ async function run() {
     const serverCollection = client.db('yoga-meditation').collection('classes');
     const selectedCollection = client.db('yoga-meditation').collection('selectcls');
     const usersCollection = client.db('yoga-meditation').collection('users');
+    const paymentsCollection = client.db('yoga-meditation').collection('payments');
     // server link end 
 
     // jwt localhost start
@@ -146,6 +147,12 @@ async function run() {
       const result = await selectedCollection.deleteOne(query);
       res.send(result);
     })
+    app.get('/selected/:id', verifyJwt, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await selectedCollection.findOne(query);
+      res.send(result);
+    })
     // selected data delete mongoDB  exit
 
 
@@ -184,7 +191,7 @@ async function run() {
     // admin user information get end
 
     // user admin check start
-    app.get('/users/admin/:email', verifyJwt, async (req, res) => {
+    app.get('/users/admin/:email', verifyJwt,verifyAdmin, async (req, res) => {
       const email = req.params.email;
 
       if (req.decoded.email !== email) {
@@ -206,7 +213,7 @@ async function run() {
     // user admin check end
 
     // user Instructors check start
-    app.get('/users/Instructors/:email', verifyJwt, async (req, res) => {
+    app.get('/users/Instructors/:email', verifyJwt,verifyInstructors, async (req, res) => {
       const email = req.params.email;
 
       if (req.decoded.email !== email) {
@@ -256,6 +263,36 @@ async function run() {
     // user Instructors role added exit
 
 
+    // payment api
+    app.post('/create-payment-intent', async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
+    })
+
+    app.get('/payment-details/:email', verifyJwt, async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await paymentsCollection.find(query).sort({data: 1}).toArray();
+      res.send(result);
+    })
+
+    app.post('/payments', verifyJwt, async (req, res) => {
+      const payment = req.body;
+      const insertResult = await paymentsCollection.insertOne(payment);
+      const query = { _id: new ObjectId(payment._id) };
+      const deleteResult = await selectedCollection.deleteOne(query);
+      res.send({ insertResult, deleteResult });
+    })
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -267,7 +304,7 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-  res.send('Assignment12 server running')
+  res.send('yoga-meditation server is running')
 })
 
 app.listen(port, () => {
