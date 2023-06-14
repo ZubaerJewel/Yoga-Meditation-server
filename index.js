@@ -1,11 +1,12 @@
-require('dotenv').config();
+
 const express = require('express');
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
 const cors = require('cors');
 // // jwt
 const jwt = require('jsonwebtoken');
 const app = express();
 const port = process.env.PORT || 5000;
-
+require('dotenv').config();
 // middleware 
 app.use(cors());
 app.use(express.json());
@@ -150,7 +151,7 @@ async function run() {
     app.get('/selected/:id', verifyJwt, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await selectedCollection.findOne(query);
+      const result = await selectedCollection.find(query).toArray();
       res.send(result);
     })
     // selected data delete mongoDB  exit
@@ -191,7 +192,7 @@ async function run() {
     // admin user information get end
 
     // user admin check start
-    app.get('/users/admin/:email', verifyJwt,verifyAdmin, async (req, res) => {
+    app.get('/users/admin/:email', verifyJwt, async (req, res) => {
       const email = req.params.email;
 
       if (req.decoded.email !== email) {
@@ -213,7 +214,7 @@ async function run() {
     // user admin check end
 
     // user Instructors check start
-    app.get('/users/Instructors/:email', verifyJwt,verifyInstructors, async (req, res) => {
+    app.get('/users/Instructors/:email', verifyJwt, async (req, res) => {
       const email = req.params.email;
 
       if (req.decoded.email !== email) {
@@ -266,7 +267,9 @@ async function run() {
     // payment api
     app.post('/create-payment-intent', async (req, res) => {
       const { price } = req.body;
+      
       const amount = parseInt(price * 100);
+      console.log("i am here",price);
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: 'usd',
