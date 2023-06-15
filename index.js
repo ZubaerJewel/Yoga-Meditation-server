@@ -272,35 +272,49 @@ async function run() {
 
 
     // payment api
-    app.post('/create-payment-intent', async (req, res) => {
+    // create payment intent verifyJwt,
+    app.post("/create-payment-intent",  async (req, res) => {
       const { price } = req.body;
-      
-      const amount = parseInt(price * 100);
-      console.log("i am here",price);
+      const amount = price * 100;
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
-        currency: 'usd',
-        payment_method_types: ['card']
+        currency: "usd",
+        payment_method_types: ["card"],
       });
 
       res.send({
-        clientSecret: paymentIntent.client_secret
-      })
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+
+    // payment related apis
+    app.get("/payments", async (req, res) => {
+      const email = req.query.email;
+      const query = {email: email}
+      const result = await paymentsCollection.find(query).toArray()
+      res.send(result)
     })
 
-    app.get('/payment-details/:email', verifyJwt, async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
-      const result = await paymentsCollection.find(query).sort({data: 1}).toArray();
-      res.send(result);
+    app.get("/payments", async (req, res) => {
+      const email = req.query.email;
+      const query = {email: email}
+      const result = await paymentsCollection.find(query).toArray()
+      const filteredResult = result.filter((obj) => obj.item);
+      const itemArray = filteredResult.map(obj => obj.item)
+      res.send(itemArray)
     })
+//verifyJwt,
+    app.post("/payments",  async (req, res) => {
+      const payment = req.body
+      const insertResult = await paymentsCollection.insertOne(payment)
 
-    app.post('/payments', verifyJwt, async (req, res) => {
-      const payment = req.body;
-      const insertResult = await paymentsCollection.insertOne(payment);
-      const query = { _id: new ObjectId(payment._id) };
-      const deleteResult = await selectedCollection.deleteOne(query);
-      res.send({ insertResult, deleteResult });
+      const query = {
+        _id: new ObjectId(payment.cartItems)
+      }
+      
+      const deleteResult = await selectedCollection.deleteOne(query)
+      res.send({ result: insertResult, deleteResult })
     })
 
     // Send a ping to confirm a successful connection
