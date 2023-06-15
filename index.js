@@ -154,6 +154,13 @@ async function run() {
       const result = await selectedCollection.find(query).toArray();
       res.send(result);
     })
+//payment data collellct from selected item
+    app.get("/cart/:id", async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) }
+      const result = await selectedCollection.find(query).toArray();
+      res.send(result);
+    });
     // selected data delete mongoDB  exit
 
 
