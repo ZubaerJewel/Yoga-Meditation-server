@@ -271,7 +271,7 @@ async function run() {
     // user Instructors role added exit
 
 
-    // payment api
+   
     // create payment intent verifyJwt,
     app.post("/create-payment-intent",  async (req, res) => {
       const { price } = req.body;
