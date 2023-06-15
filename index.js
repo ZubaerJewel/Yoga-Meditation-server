@@ -52,7 +52,7 @@ async function run() {
     const selectedCollection = client.db('yoga-meditation').collection('selectcls');
     const usersCollection = client.db('yoga-meditation').collection('users');
     const paymentsCollection = client.db('yoga-meditation').collection('payments');
-    // server link end 
+    // server link end for my database issue
 
     // jwt localhost start
     app.post('/jwt', (req, res) => {
